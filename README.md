@@ -1,4 +1,4 @@
-# ${1:canvas-to-js}
+# canvas-to-js
 An app that generates javascript for HTML5 canvas as you draw. Great for learning about the Canvas API.
 ## Installation
 1. Install packages: `npm install`
