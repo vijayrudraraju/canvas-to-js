@@ -5,7 +5,7 @@ An app that generates javascript for HTML5 canvas as you draw. Great for learnin
 2. Run development server: `npm run start`
 3. Build for production: `npm run build`
 ## Usage
-Usign 3 different strokes (straight line, scribble line, quadratic line), and solid or gradient fills, draw on the canvas to produce the Canvas API Javascript code that produces that drawing.
+Use 3 different strokes (straight line, scribble line, quadratic line), and solid or gradient fills, draw on the canvas to produce the Canvas API Javascript code that produces that drawing.
 ## Contributing
 1. Fork it!
 2. Create your feature branch: `git checkout -b my-new-feature`
