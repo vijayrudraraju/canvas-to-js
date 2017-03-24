@@ -1,138 +1,131 @@
 <template>
-<div class="tile is-ancestor" @mouseup="onBodyMouseUp" @click="onBodyClick">
-  <div class="tile is-vertical is-3">
+<div class="columns" @mouseup="onBodyMouseUp">
 
-    <div class="tile">
-      <div class="tile is-vertical">
-
-        <div class="tile is-parent notification is-primary">
-          <div class="tile is-child">
-            <label class="label">Line color</label>
-            <slider id="picker" v-model="lineColor" @change-color="onStrokeChange"></slider>
-          </div>
-        </div>
-
-        <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && fill_mode == 1 && useFill && connectLines">
-          <div class="tile is-child">
-            <label class="label">Fill color</label>
-            <slider id="fill_picker" v-model="fillColor" @change-color="onFillChange"></slider>
-          </div>
-        </div>
-
-        <div class="tile is-parent notification is-primary" v-show="fill_mode == 2 && useFill">
-          <div class="tile is-child">
-            <label class="label">Gradient Color</label>
-            <div class="level">
-              <slider id="gradient_picker" v-model="gradientColor" @change-color="onGradientChange"></slider>
-            </div>
-            <div class="level">
-              <canvas id="gradientCanvas" height="50" class="level-item"></canvas>
-            </div>
-            <div class="level">
-              <!--<a id="gradient" class="button level-item" @click="onGradientModeClick">gradient</a>-->
-              <p class="control">
-                <a id="addStop" class="button level-item" @click="onAddStopClick">Add Color Stop</a>
-              </p>
-              <p class="control">
-                <a id="clearGradient" class="button level-item" @click="onClearGradientClick">Clear Gradient</a>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tile is-parent notification is-primary" style="height:200px">
-          <div class="tile is-child">
-            <div class="field">
-              <label class="label">Line type</label>
-              <p class="control">
-                <label class="radio">
-                  <input type="radio" name="strokeType" value="0" v-model="stroke_mode">
-                  Straight
-                </label>
-              </p>
-              <p class="control">
-                <label class="radio">
-                  <input type="radio" name="strokeType" value="1" v-model="stroke_mode">
-                  Scribble
-                </label>
-              </p>
-              <p class="control">
-                <label class="radio">
-                  <input type="radio" name="strokeType" value="2" v-model="stroke_mode">
-                  Quadratic
-                </label>
-              </p>
-            </div>
-          </div>
-
-          <div class="tile is-child" v-show="stroke_mode != 1">
-            <label class="label">Options</label>
-            <div class="field">
-              <p class="control">
-                <label class="checkbox">
-                  <input type="checkbox" v-model="connectLines" @click="onLinkCheckboxClick">
-                  Link lines
-                </label>
-              </p>
-              <p class="control" v-show="connectLines">
-                <label class="checkbox">
-                  <input type="checkbox" v-model="useFill" @click="onFillCheckboxClick">
-                  Use fill
-                </label>
-              </p>
-            </div>
-          </div>
-
-          <div class="tile is-child" v-show="stroke_mode != 1 && useFill && connectLines">
-            <div class="field">
-              <label class="label">Fill type</label>
-              <p class="control">
-                <label class="radio">
-                  <input type="radio" name="fillType" value="1" v-model="fill_mode">
-                  Solid
-                </label>
-              </p>
-              <p class="control">
-                <label class="radio">
-                  <input type="radio" name="fillType" value="2" v-model="fill_mode">
-                  Gradient
-                </label>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tile is-parent notification is-primary">
-          <div class="tile is-child">
-            <label class="label">Commands</label>
-            <div class="level">
-              <p class="control">
-                <a id="execute" class="button" @click="onClickExecute">RUN CODE</a>
-              </p>
-              <p class="control">
-                <a id="clear" @click="onClearClick" class="button">ERASE ALL</a>
-              </p>
-            </div>
-          </div>
+  <div class="column is-narrow">
+    <div class="tile is-parent notification is-primary">
+      <div class="tile is-child">
+        <div class="field">
+          <label class="label">Line type</label>
+          <p class="control">
+            <label class="radio">
+              <input type="radio" name="strokeType" value="0" v-model="stroke_mode">
+              Straight
+            </label>
+          </p>
+          <p class="control">
+            <label class="radio">
+              <input type="radio" name="strokeType" value="1" v-model="stroke_mode">
+              Scribble
+            </label>
+          </p>
+          <p class="control">
+            <label class="radio">
+              <input type="radio" name="strokeType" value="2" v-model="stroke_mode">
+              Quadratic
+            </label>
+          </p>
         </div>
       </div>
 
-      <div class="tile is-parent is-vertical">
-        <div class="tile is-child">
-          <label class="label">Drawing Canvas</label>
-          <canvas id="editorCanvas" width="600" height="300" @mousedown="onCanvasMouseDown" @mousemove="onCanvasMouseMove" @click="onCanvasClick" class="level-item"></canvas>
-        </div>
-        <div class="tile is-child">
-          <label class="label">Drawing Code</label>
-          <div class="level">
-            <textarea id="editorTextArea" class="textarea level-item"></textarea>
-          </div>
+      <div class="tile is-child" v-show="stroke_mode != 1">
+        <label class="label">Options</label>
+        <div class="field">
+          <p class="control">
+            <label class="checkbox">
+              <input type="checkbox" v-model="connectLines" @click="onLinkCheckboxClick">
+              Link lines
+            </label>
+          </p>
+          <p class="control" v-show="connectLines">
+            <label class="checkbox">
+              <input type="checkbox" v-model="useFill" @click="onFillCheckboxClick">
+              Use fill
+            </label>
+          </p>
         </div>
       </div>
 
     </div>
 
+    <div class="tile is-parent notification is-primary">
+      <div class="tile is-child">
+        <label class="label">Line color</label>
+        <compact id="picker" v-model="lineColor" @change-color="onStrokeChange"></compact>
+      </div>
+    </div>
+
+    <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && useFill && connectLines">
+      <div class="tile is-child" v-show="stroke_mode != 1 && useFill && connectLines">
+        <div class="field">
+          <label class="label">Fill type</label>
+          <p class="control">
+            <label class="radio">
+              <input type="radio" name="fillType" value="1" v-model="fill_mode">
+              Solid
+            </label>
+          </p>
+          <p class="control">
+            <label class="radio">
+              <input type="radio" name="fillType" value="2" v-model="fill_mode">
+              Gradient
+            </label>
+          </p>
+        </div>
+      </div>
+   </div>
+
+
+    <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && fill_mode == 1 && useFill && connectLines">
+      <div class="tile is-child">
+        <label class="label">Fill color</label>
+        <compact id="fill_picker" v-model="fillColor" @change-color="onFillChange"></compact>
+      </div>
+    </div>
+
+    <div class="tile is-parent notification is-primary" v-show="fill_mode == 2 && useFill">
+      <div class="tile is-child">
+        <label class="label">Gradient Color</label>
+        <div class="level">
+          <compact id="gradient_picker" v-model="gradientColor" @change-color="onGradientChange"></compact>
+        </div>
+        <div class="level">
+          <canvas id="gradientCanvas" width="180" height="50" class="level-item"></canvas>
+        </div>
+        <div class="level">
+          <p class="control">
+            <a id="clearGradient" class="button level-item" @click="onClearGradientClick">Clear Gradient</a>
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <div class="column">
+    <div class="tile is-parent is-vertical notification">
+      <div class="tile is-child">
+        <label class="label">Commands</label>
+        <div class="field is-grouped">
+          <p class="control">
+            <a id="execute" class="button is-success" @click="onClickExecute">RUN CODE</a>
+          </p>
+          <p class="control">
+            <a id="clear" @click="onClearClick" class="button is-danger">ERASE ALL</a>
+          </p>
+        </div>
+      </div>
+      <div class="tile is-child">
+        <label class="label">Drawing Canvas</label>
+        <canvas id="editorCanvas" width="600" height="300" @mousedown="onCanvasMouseDown" @mousemove="onCanvasMouseMove" @click="onCanvasClick" class="level-item"></canvas>
+      </div>
+      <div class="tile is-child">
+        <label class="label">Drawing Code</label>
+        <div class="control">
+          <textarea id="editorTextArea" class="textarea"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 </template>
 
@@ -152,7 +145,7 @@ import {
   resetCode,
 } from './utils'
 
-import { Slider } from 'vue-color'
+import { Slider, Compact } from 'vue-color'
 
 class Point {
   constructor(x, y) {
@@ -170,7 +163,8 @@ export default {
 
   name: 'main',
   components: {
-    Slider
+    Slider,
+    Compact
   },
   data () {
     return {
@@ -193,7 +187,7 @@ export default {
       lineThickness: 2,
       gradientCanvas: null,
       gradientContext: null,
-      gradient_stops: [],
+      gradient_stops: ['#ff0000', '#00ff00'],
       gradient: null,
       picker: null,
       fill_picker: null,
@@ -216,8 +210,6 @@ export default {
       pickingGradient: false,
       straightCount: 0,
     }
-  },
-  created () {
   },
   mounted () {
     console.log('MainView', 'mounted')
@@ -258,8 +250,16 @@ export default {
       this.gradientCanvas = document.getElementById('gradientCanvas')
 
       this.gradientContext = this.gradientCanvas.getContext('2d')
-      this.gradientContext.fillStyle = '#ffffff';
-      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height);
+      this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
+      for (let i=0; i<this.gradient_stops.length; i++) {
+        if (i == 0) {
+          this.gradient.addColorStop(0.0, this.gradient_stops[0])
+        } else {
+          this.gradient.addColorStop(i*(1.0/(this.gradient_stops.length-1)), this.gradient_stops[i])
+        }
+      }
+      this.gradientContext.fillStyle = this.gradient
+      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height)
 
       this.canvas = document.getElementById('editorCanvas')
       if (!this.canvas) {
@@ -268,16 +268,7 @@ export default {
       }
       console.log('init', 'canvas.width', this.canvas.width, 'canvas.height', this.canvas.height)
 
-      if (!this.canvas.getContext) {
-        alert('Error: no canvas.getContext!');
-        return;
-      }
-
       this.context = this.canvas.getContext('2d');
-      if (!this.context) {
-        alert('Error: failed to getContext!')
-        return
-      }
 
       this.textArea = document.getElementById('editorTextArea')
       resetCode({ obj:this })
@@ -301,6 +292,7 @@ export default {
       console.log('onGradientChange', val)
 
       this.gradientColor = val
+      this.onAddStopClick()
     },
     onCanvasMouseDown(ev) {
       if (this.stroke_mode != 1 || this.drawing) {
@@ -357,6 +349,12 @@ export default {
     },
     onBodyMouseUp(ev) {
       if (this.stroke_mode != 1 || !this.drawing) {
+        let id = ev.target.id
+        if (id !== 'editorCanvas' && id !== 'clear' && id !== 'execute') {
+          console.log('onBodyClick', 'id', id, 'quadratic_stage', this.quadratic_stage, 'fill_mode', this.fill_mode)
+          this.resetToLastFrame() 
+          this.clearVars()
+        }
         return
       }
 
@@ -377,7 +375,7 @@ export default {
     onClearGradientClick() {
       console.log('onClearGradientClick')
 
-      this.gradient_stops.length = 0;
+      this.gradient_stops = ['#ff0000', '#00ff00'];
 
       this.gradientContext.fillStyle = '#ffffff';
       this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height);
@@ -470,7 +468,7 @@ export default {
         this.clearVars()
       }
     },
-    onAddStopClick(ev) {
+    onAddStopClick() {
       console.log('onAddStopClick', 'gradientColor', this.gradientColor.hex)
 
       this.gradient_stops.push(this.gradientColor.hex)

@@ -1,6 +1,14 @@
 <template>
-<div id="app" class="green1-bg">
-  <section class="section">
+<div id="app">
+  <nav class="nav indigo1-bg">
+    <div class="nav-left">
+      <a class="nav-item title" href="/canvas-to-js">canvas-to-js</a>
+    </div>
+    <div class="nav-right">
+      <a class="nav-item title" href="/">Vijay Rudraraju</a>
+    </div>
+  </nav>
+  <section style="margin-top:10px">
     <div class="container">
       <router-view></router-view>
     </div>
@@ -23,11 +31,6 @@ export default {
 
 <style src="bulma/css/bulma.css"></style>
 <style>
-#gradientCanvas {
-  background-color: #ffffff;
-  position: relative;
-}
-
 #editorCanvas {
   background-color: #dddddd;
   cursor: crosshair;

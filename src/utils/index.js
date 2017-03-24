@@ -22,8 +22,10 @@ export const lineStageOne = function ({ obj, x, y }) {
 
   obj.started = true;
 
-  obj.textArea.value = obj.textArea.value+`\n// Straight line\ncontext.beginPath();\n`
-  obj.textArea.value = obj.textArea.value+`context.moveTo(${x}, ${y});\n`
+  if (obj.connectLines) {
+    obj.textArea.value = obj.textArea.value+`\n// Straight line\ncontext.beginPath();\n`
+    obj.textArea.value = obj.textArea.value+`context.moveTo(${x}, ${y});\n`
+  }
 
   obj.straightCount = 0
 
@@ -75,17 +77,21 @@ export const lineStageTwo = function ({ obj, x, y }) {
     obj.started = false;
   } else {
     console.log('lineStageTWO', 'getImageData') 
-    obj.image_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)		
   }
+  obj.image_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)		
   
-  if (obj.fill_flag == 0) {
-    obj.textArea.value = obj.textArea.value+`context.lineTo(${x}, ${y});\n`
-  } else {
-    obj.textArea.value = obj.textArea.value+`context.lineTo(${obj.points[0].x}, ${obj.points[0].y});\n`
-  }
-  
+ 
   if (!obj.connectLines) {
+    obj.textArea.value = obj.textArea.value+`\n// Straight line\ncontext.beginPath();\n`
+    obj.textArea.value = obj.textArea.value+`context.moveTo(${obj.points[0].x}, ${obj.points[0].y});\n`
+    obj.textArea.value = obj.textArea.value+`context.lineTo(${x}, ${y});\n`
     obj.textArea.value = obj.textArea.value+`context.stroke();\n`
+  } else {
+    if (obj.fill_flag == 0) {
+      obj.textArea.value = obj.textArea.value+`context.lineTo(${x}, ${y});\n`
+    } else {
+      obj.textArea.value = obj.textArea.value+`context.lineTo(${obj.points[0].x}, ${obj.points[0].y});\n`
+    }
   }
 
   obj.straightCount++
@@ -207,7 +213,7 @@ export const quadraticStageThree = function ({ obj, x, y }) {
   console.log('quadraticStageTHREE', 'x', x, 'y', y, 'fill_mode', obj.fill_mode)
 
   obj.quadratic_stage = 1
-  if (!obj.useFill || obj.fill_mode == 1) {
+  if (obj.connectLines && (!obj.useFill || obj.fill_mode == 1)) {
     if (obj.fill_flag == 0) {
       obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
     } else if (obj.fill_flag == 1) {
@@ -223,15 +229,14 @@ export const quadraticStageThree = function ({ obj, x, y }) {
       obj.pickingGradient = true
       obj.canvas.addEventListener('click', obj.pickGradientDirection, false)
     }
+  } else {
+      obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
+      obj.handleLastStageClick()
   }
 
   obj.image_buffer = obj.context.getImageData( 0, 0, obj.canvas.width, obj.canvas.height );		
 
   obj.quadraticActivated = false
-
-  for (let i=0; i<obj.points.length; i++) {
-    console.log('quadraticStageThree', i, 'points', obj.points[i].x, obj.points[i].y)
-  }
 
 }
 
