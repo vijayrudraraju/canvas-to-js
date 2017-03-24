@@ -142,7 +142,6 @@ export const quadraticStageOne = function ({ obj, x, y }) {
   obj.context.moveTo(x, y)
 
   obj.quadratic_stage = 1
-  //console.log('NOW', 'STAGE', obj.quadratic_stage)
 
   obj.points.push(new Point(x, y))
 
@@ -158,12 +157,7 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
   if (obj.points.length == 1) {
     obj.resetToLastFrame()
 
-    obj.context.quadraticCurveTo(
-      obj.points[0].x,
-      obj.points[0].y,
-      x,
-      y 
-    )
+    obj.context.quadraticCurveTo(obj.points[0].x, obj.points[0].y, x, y)
     obj.context.stroke()
 
     obj.points.push(new Point(x, y));
@@ -178,16 +172,8 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
     obj.resetToLastFrame()
 
     obj.context.beginPath()
-    obj.context.moveTo(
-      obj.points[obj.points.length-2].x, 
-      obj.points[obj.points.length-2].y
-    )
-    obj.context.quadraticCurveTo(
-      obj.points[obj.points.length-2].x,
-      obj.points[obj.points.length-2].y,
-      x,
-      y 
-    )
+    obj.context.moveTo(obj.points[obj.points.length-2].x, obj.points[obj.points.length-2].y)
+    obj.context.quadraticCurveTo(obj.points[obj.points.length-2].x, obj.points[obj.points.length-2].y, x, y)
     obj.context.stroke()
 
     obj.points.push(new Point(x, y))
@@ -196,10 +182,11 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
 
   obj.quadratic_stage = 2
 
-
+  /*
   for (let i=0; i<obj.points.length; i++) {
     console.log('quadraticStageTwo', i, 'points', obj.points[i].x, obj.points[i].y)
   }
+  */
 
 }
 
@@ -208,6 +195,7 @@ export const quadraticStageThree = function ({ obj, x, y }) {
   console.log('quadraticStageTHREE', 'x', x, 'y', y, 'fill_mode', obj.controlData.fill_mode)
 
   obj.quadratic_stage = 1
+
   if (obj.controlData.connectLines && obj.controlData.fill_mode == 1) {
     obj.feedbackText = 'Choose another point to connect OR click the starting point to close path'
     if (!obj.highlight_flag) {
@@ -250,43 +238,31 @@ export const quadraticMoveStage = function ({ obj, ev }) {
   if (length == 3) {
     obj.context.beginPath()
     obj.context.moveTo(obj.points[0].x, obj.points[0].y)
-    obj.context.quadraticCurveTo(
-      x,
-      y,
-      obj.points[1].x,
-      obj.points[1].y 
-    )
+    obj.context.quadraticCurveTo(x, y, obj.points[1].x, obj.points[1].y)
     obj.context.stroke()
 
-    obj.points[2].x = x;
-    obj.points[2].y = y;
+    obj.points[2].x = x
+    obj.points[2].y = y
   } else if (length > 3) {
     obj.context.beginPath()
-    obj.context.moveTo(obj.points[length-4].x, obj.points[length-4].y);
-    obj.context.quadraticCurveTo(
-      x,
-      y,
-      obj.points[length-2].x,
-      obj.points[length-2].y 
-    )
+    obj.context.moveTo(obj.points[length-4].x, obj.points[length-4].y)
+    obj.context.quadraticCurveTo(x, y, obj.points[length-2].x, obj.points[length-2].y)
     obj.context.stroke()
 
-    obj.points[length-1].x = x;
-    obj.points[length-1].y = y;
+    obj.points[length-1].x = x
+    obj.points[length-1].y = y
   }
 
 }
 
 export const execute = function({ obj }) {
-
   console.log('utils', 'execute', obj.textArea.value.length)
 
-	obj.clearCanvas();
+	obj.clearCanvas()
 
-  window.eval(obj.textArea.value);
+  window.eval(obj.textArea.value)
   
   obj.image_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)		
-
 }
 
 export const drawPointer = ({ obj, x, y }) => {
@@ -297,12 +273,7 @@ export const drawPointer = ({ obj, x, y }) => {
 }
 
 export const setGradientFromPoints = ({ obj, p1, p2 }) => {
-  obj.fill_gradient = obj.context.createLinearGradient( 
-    p1.x, 
-    p1.y, 
-    p2.x,
-    p2.y
-  )
+  obj.fill_gradient = obj.context.createLinearGradient(p1.x, p1.y, p2.x, p2.y)
 }
 
 export const extractXFromEvent = ({ ev }) => {
@@ -338,4 +309,17 @@ export const resetFeedback = ({ obj }) => {
       obj.feedbackText = 'Draw the 1st point of the CURVE'
       break
   }
+}
+
+export const updateGradient = ({ obj }) => {
+  obj.gradient = obj.gradientContext.createLinearGradient(0, 0, 200, 0)
+  for (let i=0; i<obj.controlData.gradient_stops.length; i++) {
+    if (i == 0) {
+      obj.gradient.addColorStop(0.0, obj.controlData.gradient_stops[0])
+    } else {
+      obj.gradient.addColorStop(i*(1.0/(obj.controlData.gradient_stops.length-1)), obj.controlData.gradient_stops[i])
+    }
+  }
+  obj.gradientContext.fillStyle = obj.gradient
+  obj.gradientContext.fillRect(0, 0, obj.gradientCanvas.width, obj.gradientCanvas.height)
 }

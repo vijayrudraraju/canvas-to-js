@@ -47,6 +47,7 @@ import {
   extractYFromEvent,
   resetCode,
   resetFeedback,
+  updateGradient,
 } from './utils'
 
 import Controls from 'src/Controls'
@@ -135,16 +136,7 @@ export default {
       this.gradientCanvas = document.getElementById('gradientCanvas')
 
       this.gradientContext = this.gradientCanvas.getContext('2d')
-      this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
-      for (let i=0; i<this.controlData.gradient_stops.length; i++) {
-        if (i == 0) {
-          this.gradient.addColorStop(0.0, this.controlData.gradient_stops[0])
-        } else {
-          this.gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
-        }
-      }
-      this.gradientContext.fillStyle = this.gradient
-      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height)
+      updateGradient({ obj:this })
 
       this.canvas = document.getElementById('editorCanvas')
       if (!this.canvas) {
@@ -355,8 +347,6 @@ export default {
       this.context.beginPath()
       this.context.moveTo(this.points[0].x, this.points[0].y)
 
-      //console.log('handleLastStageClick', 'this.points[0]', this.points[0].x, this.points[0].y)
-
       if (this.controlData.stroke_mode == 2) {
         this.feedbackText = 'Completed the CURVE, draw something else'
         for (let i=0; i<(this.points.length-1)/2; i++) {
@@ -378,6 +368,7 @@ export default {
       if (this.controlData.useFill && this.controlData.fill_mode == 2) {
         this.context.fillStyle = this.fill_gradient
 
+        // Generate gradient code
         this.textArea.value = this.textArea.value+`\n// Gradient\ngradient = context.createLinearGradient(${this.gradient_point_1.x}, ${this.gradient_point_1.y}, ${this.gradient_point_2.x}, ${this.gradient_point_2.y});\n`;
         for (let i=0; i<this.controlData.gradient_stops.length; i++) {
           if (i == 0) {
@@ -482,16 +473,7 @@ export default {
       this.textArea.value = this.textArea.value+`\ncontext.strokeStyle = '${this.controlData.lineColor.hex}';\n`
       this.textArea.value = this.textArea.value+`context.fillStyle = '${this.controlData.fillColor.hex}';\n`
 
-      this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
-      for (let i=0; i<this.controlData.gradient_stops.length; i++) {
-        if (i == 0) {
-          this.gradient.addColorStop(0.0, this.controlData.gradient_stops[0])
-        } else {
-          this.gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
-        }
-      }
-      this.gradientContext.fillStyle = this.gradient
-      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height)
+      updateGradient({ obj:this })
 
       resetFeedback({ obj:this })
     }

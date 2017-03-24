@@ -96,13 +96,12 @@
 
 <script>
 
-import { Slider, Compact } from 'vue-color'
+import { Compact } from 'vue-color'
 
 export default {
 
   name: 'controls',
   components: {
-    Slider,
     Compact
   },
   mounted () {
