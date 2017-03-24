@@ -1,42 +1,6 @@
 <template>
-<div class="tile is-vertical">
-
+<div class="column is-narrow">
   <div class="tile is-parent notification is-primary">
-    <div class="tile is-child">
-      <label class="label">Line color</label>
-      <slider id="picker" v-model="lineColor" @change-color="onStrokeChange"></slider>
-    </div>
-  </div>
-
-  <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && fill_mode == 1 && useFill && connectLines">
-    <div class="tile is-child">
-      <label class="label">Fill color</label>
-      <slider id="fill_picker" v-model="fillColor" @change-color="onFillChange"></slider>
-    </div>
-  </div>
-
-  <div class="tile is-parent notification is-primary" v-show="fill_mode == 2 && useFill">
-    <div class="tile is-child">
-      <label class="label">Gradient Color</label>
-      <div class="level">
-        <slider id="gradient_picker" v-model="gradientColor" @change-color="onGradientChange"></slider>
-      </div>
-      <div class="level">
-        <canvas id="gradientCanvas" height="50" class="level-item"></canvas>
-      </div>
-      <div class="level">
-        <!--<a id="gradient" class="button level-item" @click="onGradientModeClick">gradient</a>-->
-        <p class="control">
-          <a id="addStop" class="button level-item" @click="onAddStopClick">Add Color Stop</a>
-        </p>
-        <p class="control">
-          <a id="clearGradient" class="button level-item" @click="onClearGradientClick">Clear Gradient</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div class="tile is-parent notification is-primary" style="height:200px">
     <div class="tile is-child">
       <div class="field">
         <label class="label">Line type</label>
@@ -48,14 +12,14 @@
         </p>
         <p class="control">
           <label class="radio">
-            <input type="radio" name="strokeType" value="1" v-model="stroke_mode">
+            <input type="radio" name="strokeType" value="1" v-model="stroke_mode" @click="onScribbleClick">
             Scribble
           </label>
         </p>
         <p class="control">
           <label class="radio">
             <input type="radio" name="strokeType" value="2" v-model="stroke_mode">
-            Quadratic
+            Curve
           </label>
         </p>
       </div>
@@ -79,6 +43,16 @@
       </div>
     </div>
 
+  </div>
+
+  <div class="tile is-parent notification is-primary">
+    <div class="tile is-child">
+      <label class="label">Line color <span class="white">{{ lineColor.hex }}</span></label>
+      <compact id="picker" v-model="lineColor" @change-color="onLineColorChange"></compact>
+    </div>
+  </div>
+
+  <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && useFill && connectLines">
     <div class="tile is-child" v-show="stroke_mode != 1 && useFill && connectLines">
       <div class="field">
         <label class="label">Fill type</label>
@@ -96,18 +70,24 @@
         </p>
       </div>
     </div>
+ </div>
+
+
+  <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && fill_mode == 1 && useFill && connectLines">
+    <div class="tile is-child">
+      <label class="label">Fill color <span class="white">{{ fillColor.hex }}</span></label>
+      <compact id="fill_picker" v-model="fillColor" @change-color="onFillColorChange"></compact>
+    </div>
   </div>
 
-  <div class="tile is-parent notification is-primary">
+  <div class="tile is-parent notification is-primary" v-show="fill_mode == 2 && useFill">
     <div class="tile is-child">
-      <label class="label">Commands</label>
+      <label class="label">Gradient Color</label>
       <div class="level">
-        <p class="control">
-          <a id="execute" class="button" @click="onClickExecute">RUN CODE</a>
-        </p>
-        <p class="control">
-          <a id="clear" @click="onClearClick" class="button">ERASE ALL</a>
-        </p>
+        <compact id="gradient_picker" v-model="gradientColor" @change-color="onGradientColorChange"></compact>
+      </div>
+      <div class="level">
+        <canvas id="gradientCanvas" width="180" height="50" class="level-item"></canvas>
       </div>
     </div>
   </div>
@@ -116,21 +96,86 @@
 
 <script>
 
+import { Slider, Compact } from 'vue-color'
+
 export default {
 
   name: 'controls',
+  components: {
+    Slider,
+    Compact
+  },
+  mounted () {
+    this.$emit('control', this.$data)
+  },
+  data () {
+    return {
+      stroke_mode: "1",
+      fill_mode: "1",
+      connectLines: true,
+      useFill: true,
+      lineColor: {
+        hex: '#194D33', a: 1
+      },
+      fillColor: {
+        hex: '#FDA1FF', a: 1
+      },
+      gradientColor: {
+        hex: '#294d93', a: 1
+      },
+      gradient_stops: ['#ff0000', '#00ff00'],
+    }
+  },
+  watch: {
+    stroke_mode: function(newVal) {
+      this.$emit('control', this.$data)
+    },
+    fill_mode: function(newVal) {
+      this.$emit('control', this.$data)
+    },
+    connectLines: function(newVal) {
+      this.$emit('control', this.$data)
+    },
+    useFill: function(newVal) {
+      this.$emit('control', this.$data)
+    },
+  },
   methods: {
-    onStrokeChange(val) {
-      console.log('onStrokeChange', val.hex, this.lineColor)
+    onLinkCheckboxClick() {
+      console.log('onLinkCheckboxClick', this.connectLines)
 
+      if (!this.connectLines) {
+        this.useFill = false
+      }
     },
-    onFillChange(val) {
-      console.log('onFillChange', val.hex)
-
+    onFillCheckboxClick() {
+      console.log('onFillCheckboxClick', this.fill_picker)
     },
-    onGradientChange(val) {
-      console.log('onGradientChange', val)
+    onLineColorChange(val) {
+      console.log('onLineColorChange', val)
+      this.lineColor = val
+      this.$emit('control', this.$data)
+    },
+    onFillColorChange(val) {
+      console.log('onFillColorChange', val)
+      this.fillColor = val
+      this.$emit('control', this.$data)
+    },
+    onGradientColorChange(val) {
+      console.log('onGradientColorChange', val)
 
+      if (this.gradient_stops.length < 2) {
+        this.gradient_stops.push(val.hex)
+      } else {
+        this.gradient_stops = [val.hex]
+      }
+
+      this.$emit('control', this.$data)
+    },
+    onScribbleClick() {
+      console.log('onScribbleClick')
+      this.connectLines = false
+      this.useFill = false
     },
   }
 

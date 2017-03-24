@@ -1,104 +1,7 @@
 <template>
 <div class="columns" @mouseup="onBodyMouseUp">
 
-  <div class="column is-narrow">
-    <div class="tile is-parent notification is-primary">
-      <div class="tile is-child">
-        <div class="field">
-          <label class="label">Line type</label>
-          <p class="control">
-            <label class="radio">
-              <input type="radio" name="strokeType" value="0" v-model="stroke_mode">
-              Straight
-            </label>
-          </p>
-          <p class="control">
-            <label class="radio">
-              <input type="radio" name="strokeType" value="1" v-model="stroke_mode">
-              Scribble
-            </label>
-          </p>
-          <p class="control">
-            <label class="radio">
-              <input type="radio" name="strokeType" value="2" v-model="stroke_mode">
-              Quadratic
-            </label>
-          </p>
-        </div>
-      </div>
-
-      <div class="tile is-child" v-show="stroke_mode != 1">
-        <label class="label">Options</label>
-        <div class="field">
-          <p class="control">
-            <label class="checkbox">
-              <input type="checkbox" v-model="connectLines" @click="onLinkCheckboxClick">
-              Link lines
-            </label>
-          </p>
-          <p class="control" v-show="connectLines">
-            <label class="checkbox">
-              <input type="checkbox" v-model="useFill" @click="onFillCheckboxClick">
-              Use fill
-            </label>
-          </p>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="tile is-parent notification is-primary">
-      <div class="tile is-child">
-        <label class="label">Line color</label>
-        <compact id="picker" v-model="lineColor" @change-color="onStrokeChange"></compact>
-      </div>
-    </div>
-
-    <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && useFill && connectLines">
-      <div class="tile is-child" v-show="stroke_mode != 1 && useFill && connectLines">
-        <div class="field">
-          <label class="label">Fill type</label>
-          <p class="control">
-            <label class="radio">
-              <input type="radio" name="fillType" value="1" v-model="fill_mode">
-              Solid
-            </label>
-          </p>
-          <p class="control">
-            <label class="radio">
-              <input type="radio" name="fillType" value="2" v-model="fill_mode">
-              Gradient
-            </label>
-          </p>
-        </div>
-      </div>
-   </div>
-
-
-    <div class="tile is-parent notification is-primary" v-show="stroke_mode != 1 && fill_mode == 1 && useFill && connectLines">
-      <div class="tile is-child">
-        <label class="label">Fill color</label>
-        <compact id="fill_picker" v-model="fillColor" @change-color="onFillChange"></compact>
-      </div>
-    </div>
-
-    <div class="tile is-parent notification is-primary" v-show="fill_mode == 2 && useFill">
-      <div class="tile is-child">
-        <label class="label">Gradient Color</label>
-        <div class="level">
-          <compact id="gradient_picker" v-model="gradientColor" @change-color="onGradientChange"></compact>
-        </div>
-        <div class="level">
-          <canvas id="gradientCanvas" width="180" height="50" class="level-item"></canvas>
-        </div>
-        <div class="level">
-          <p class="control">
-            <a id="clearGradient" class="button level-item" @click="onClearGradientClick">Clear Gradient</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <controls v-on:control="onControl"></controls>
 
   <div class="column">
     <div class="tile is-parent is-vertical notification">
@@ -114,7 +17,7 @@
         </div>
       </div>
       <div class="tile is-child">
-        <label class="label">Drawing Canvas</label>
+        <label class="label">{{ feedbackText }}</label>
         <canvas id="editorCanvas" width="600" height="300" @mousedown="onCanvasMouseDown" @mousemove="onCanvasMouseMove" @click="onCanvasClick" class="level-item"></canvas>
       </div>
       <div class="tile is-child">
@@ -143,9 +46,10 @@ import {
   extractXFromEvent,
   extractYFromEvent,
   resetCode,
+  resetFeedback,
 } from './utils'
 
-import { Slider, Compact } from 'vue-color'
+import Controls from 'src/Controls'
 
 class Point {
   constructor(x, y) {
@@ -163,35 +67,20 @@ export default {
 
   name: 'main',
   components: {
-    Slider,
-    Compact
+    Controls
   },
   data () {
     return {
-      lineColor: {
-        hex: '#194d33', a: 1
-      },
-      fillColor: {
-        hex: '#599d33', a: 1
-      },
-      gradientColor: {
-        hex: '#294d93', a: 1
-      },
+      controlData: {},
       canvas: null,
       context: null,
       image_buffer: null,
       fill_chain_buffer: null,
-      stroke_mode: "1",
-      fill_mode: "1",
       drawing: false,
       lineThickness: 2,
       gradientCanvas: null,
       gradientContext: null,
-      gradient_stops: ['#ff0000', '#00ff00'],
       gradient: null,
-      picker: null,
-      fill_picker: null,
-      gradient_picker: null,
       oldX: 0,
       oldY: 0,
       textArea: null,
@@ -200,15 +89,15 @@ export default {
       useFill: true,
       quadratic_stage: 0,
       points: [],
-      fill_flag: 0,
+      highlight_flag: false,
       adj_x: 0,
       adj_y: 0,
-      quadraticActivated: false,
       gradient_point_1: new Point(0, 0),
       gradient_point_2: new Point(0, 0),
       gradient_stage: 0,
       pickingGradient: false,
       straightCount: 0,
+      feedbackText: 'Drawing Canvas',
     }
   },
   mounted () {
@@ -243,19 +132,15 @@ export default {
     init() {
       console.log('init')
 
-      this.picker = document.getElementById('picker');
-      this.fill_picker = document.getElementById('fill_picker');
-      this.gradient_picker = document.getElementById('gradient_picker')
-
       this.gradientCanvas = document.getElementById('gradientCanvas')
 
       this.gradientContext = this.gradientCanvas.getContext('2d')
       this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
-      for (let i=0; i<this.gradient_stops.length; i++) {
+      for (let i=0; i<this.controlData.gradient_stops.length; i++) {
         if (i == 0) {
-          this.gradient.addColorStop(0.0, this.gradient_stops[0])
+          this.gradient.addColorStop(0.0, this.controlData.gradient_stops[0])
         } else {
-          this.gradient.addColorStop(i*(1.0/(this.gradient_stops.length-1)), this.gradient_stops[i])
+          this.gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
         }
       }
       this.gradientContext.fillStyle = this.gradient
@@ -273,29 +158,14 @@ export default {
       this.textArea = document.getElementById('editorTextArea')
       resetCode({ obj:this })
 
+      this.context.strokeStyle = this.controlData.lineColor.hex
+      this.context.fillStyle = this.controlData.fillColor.hex;
       this.context.lineWidth = this.lineThickness
+
       this.image_buffer = this.context.createImageData(this.canvas.width, this.canvas.height)
     },
-    onStrokeChange(val) {
-      console.log('onStrokeChange', val.hex, this.lineColor)
-
-      this.lineColor = val
-      this.textArea.value = this.textArea.value+`\ncontext.strokeStyle = '${this.lineColor.hex}';\n`
-    },
-    onFillChange(val) {
-      console.log('onFillChange', val.hex)
-
-      this.fillColor = val
-      this.textArea.value = this.textArea.value+`\ncontext.fillStyle = '${this.fillColor.hex}';\n`
-    },
-    onGradientChange(val) {
-      console.log('onGradientChange', val)
-
-      this.gradientColor = val
-      this.onAddStopClick()
-    },
     onCanvasMouseDown(ev) {
-      if (this.stroke_mode != 1 || this.drawing) {
+      if (this.controlData.stroke_mode != 1 || this.drawing) {
         return
       }
 
@@ -306,7 +176,6 @@ export default {
 
       this.drawing = true
 
-      this.context.strokeStyle = this.lineColor.hex;
       this.context.lineWidth = this.lineThickness
 
       this.oldX = x
@@ -320,8 +189,9 @@ export default {
       this.textArea.value = this.textArea.value+`context.moveTo(${this.oldX}, ${this.oldY});\n`
     },
     onCanvasMouseMove(ev) {
-      if (this.stroke_mode != 1 || !this.drawing) {
-        if (this.quadraticActivated) {
+      if (this.controlData.stroke_mode != 1 || !this.drawing) {
+        if (this.quadratic_stage == 2) {
+          this.feedbackText = 'Move mouse to choose the shape of the CURVE'
           quadraticMoveStage({ obj:this, ev })
         }
         return
@@ -331,9 +201,6 @@ export default {
 
       let x = ev.pageX - this.canvasLeft
       let y = ev.pageY - this.canvasTop
-
-      this.context.strokeStyle = this.lineColor.hex
-      this.context.fillStyle = this.fillColor.hex
 
       if (this.drawing) {
         this.context.moveTo(this.oldX, this.oldY)
@@ -346,14 +213,25 @@ export default {
 
       this.oldX = x
       this.oldY = y
+
+      this.feedbackText = 'Keep scribbling!'
     },
     onBodyMouseUp(ev) {
-      if (this.stroke_mode != 1 || !this.drawing) {
+      if (this.controlData.stroke_mode != 1 || !this.drawing) {
         let id = ev.target.id
         if (id !== 'editorCanvas' && id !== 'clear' && id !== 'execute') {
-          console.log('onBodyClick', 'id', id, 'quadratic_stage', this.quadratic_stage, 'fill_mode', this.fill_mode)
+          console.log('onBodyClick', 'id', id, 'quadratic_stage', this.quadratic_stage, 'fill_mode', this.controlData.fill_mode)
           this.resetToLastFrame() 
           this.clearVars()
+          resetFeedback({ obj:this })
+
+          if (this.controlData.stroke_mode == 0) {
+            if (this.controlData.useFill) {
+              this.textArea.value = this.textArea.value+`context.fill();\n`
+            }
+            this.textArea.value = this.textArea.value+`context.stroke();\n`
+            this.textArea.value = this.textArea.value+`\n`
+          }
         }
         return
       }
@@ -365,6 +243,8 @@ export default {
       this.drawing = false
       this.textArea.value = this.textArea.value+`context.stroke();\n`
       this.textArea.value = this.textArea.value+`\n`
+
+      resetFeedback({ obj:this })
     },
     onClearClick() {
       console.log('onClearClick')
@@ -372,19 +252,12 @@ export default {
       this.clearCanvas()
       resetCode({ obj:this })
     },
-    onClearGradientClick() {
-      console.log('onClearGradientClick')
-
-      this.gradient_stops = ['#ff0000', '#00ff00'];
-
-      this.gradientContext.fillStyle = '#ffffff';
-      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height);
-    },
     clearVars() {
-      this.quadraticActivated = false
       this.quadratic_stage = 0
-      this.started = false;
-      this.points = [];
+      this.started = false
+      this.points = []
+      this.highlight_flag = false
+      this.pickingGradient = false
     },
     clearCanvas() {
       console.log('clearCanvas')
@@ -396,30 +269,26 @@ export default {
 
       this.context.fillStyle = '#dddddd'
       this.context.fillRect(0, 0, this.canvas.width, this.canvas.height)
-      this.context.fillStyle = this.fillColor.hex
 
       this.context.lineWidth = this.lineThickness
 
       this.clearVars()
     },
     onCanvasClick(ev) {
-      if (this.pickingGradient || this.stroke_mode == 1) {
+      if (this.pickingGradient || this.controlData.stroke_mode == 1) {
         return
       }
 
       console.log('')
       console.log('')
-      console.log('onCanvasClick', 'stroke_mode', this.stroke_mode, 'started', this.started)
+      console.log('onCanvasClick', 'stroke_mode', this.controlData.stroke_mode, 'started', this.started)
       console.log('onCanvasClick', 'quadratic_stage', this.quadratic_stage)
-      console.log('onCanvasClick', 'fill_mode', this.fill_mode, 'fill_flag', this.fill_flag)
+      console.log('onCanvasClick', 'fill_mode', this.controlData.fill_mode, 'highlight_flag', this.highlight_flag)
 
       let x = extractXFromEvent({ ev })
       let y = extractYFromEvent({ ev })
 
-      this.context.strokeStyle = this.lineColor.hex;
-      this.context.fillStyle = this.fillColor.hex;
-
-      switch (parseInt(this.stroke_mode)) {
+      switch (parseInt(this.controlData.stroke_mode)) {
         case 0:
           if (!this.started) {
             lineStageOne({ obj: this, x, y })
@@ -442,48 +311,11 @@ export default {
           break
       }
     },
-    onFillCheckboxClick() {
-      //console.log('onFillCheckboxClick', this.fill_picker)
-    },
-    onLinkCheckboxClick() {
-      //console.log('onLinkCheckboxClick', this.connectLines)
-
-      if (!this.connectLines) {
-        this.useFill = false
-      }
-    },
     resetToLastFrame() {
       //console.log('resetToLastFrame')
 
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
       this.context.putImageData(this.image_buffer, 0, 0);
-    },
-    onBodyClick(ev) {
-      //console.log('onBodyClick', 'useFill', this.useFill, 'connectLines', this.connectLines)
-
-      let id = ev.target.id
-      if (id !== 'editorCanvas' && id !== 'clear' && id !== 'execute') {
-        console.log('onBodyClick', 'id', id, 'quadratic_stage', this.quadratic_stage, 'fill_mode', this.fill_mode)
-        this.resetToLastFrame() 
-        this.clearVars()
-      }
-    },
-    onAddStopClick() {
-      console.log('onAddStopClick', 'gradientColor', this.gradientColor.hex)
-
-      this.gradient_stops.push(this.gradientColor.hex)
-
-      this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
-      for (let i=0; i<this.gradient_stops.length; i++) {
-        if (i == 0) {
-          this.gradient.addColorStop(0.0, this.gradient_stops[0])
-        } else {
-          this.gradient.addColorStop(i*(1.0/(this.gradient_stops.length-1)), this.gradient_stops[i])
-        }
-      }
-
-      this.gradientContext.fillStyle = this.gradient
-      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height)
     },
     highlightOrigin(ev) {
       console.log('highlightOrigin')
@@ -504,22 +336,18 @@ export default {
       if (Math.abs(x - this.points[0].x) < 7 && Math.abs(y - this.points[0].y) < 7) {
         drawPointer({ obj:this, x:this.points[0].x, y:this.points[0].y })
 
-        this.fill_flag = 1
+        this.highlight_flag = true
 
         this.adj_x = this.points[0].x
         this.adj_y = this.points[0].y
       } else {
         this.resetToLastFrame()
-        this.fill_flag = 0
+        this.highlight_flag = false
       }
     },
     handleLastStageClick() {
 
-      console.log('handleLastStageClick', 'stroke_mode', this.stroke_mode, 'fill_mode', this.fill_mode)
-
-      for (let i=0; i<this.points.length; i++) {
-        console.log('handleLastStageClick', i, 'points', this.points[i].x, this.points[i].y)
-      }
+      console.log('handleLastStageClick', 'stroke_mode', this.controlData.stroke_mode, 'fill_mode', this.controlData.fill_mode)
 
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
       this.context.putImageData(this.fill_chain_buffer, 0, 0)
@@ -529,7 +357,8 @@ export default {
 
       //console.log('handleLastStageClick', 'this.points[0]', this.points[0].x, this.points[0].y)
 
-      if (this.stroke_mode == 2) {
+      if (this.controlData.stroke_mode == 2) {
+        this.feedbackText = 'Completed the CURVE, draw something else'
         for (let i=0; i<(this.points.length-1)/2; i++) {
           this.context.quadraticCurveTo( 
             this.points[(i*2)+2].x,
@@ -538,34 +367,35 @@ export default {
             this.points[(i*2)+1].y 
           )
         }
-      } else if (this.stroke_mode == 0 && this.points.length > 1) {
+      } else if (this.controlData.stroke_mode == 0 && this.points.length > 1) {
+        this.feedbackText = 'Completed the LINE, draw something else'
         for (let i=0; i<this.points.length; i++) {
           console.log('handleLastStageClick', 'this.points[i]', this.points[i].x, this.points[i].y)
           this.context.lineTo(this.points[i].x, this.points[i].y) 
         }
       }
 
-      if (this.useFill && this.fill_mode == 2) {
+      if (this.controlData.useFill && this.controlData.fill_mode == 2) {
         this.context.fillStyle = this.fill_gradient
 
         this.textArea.value = this.textArea.value+`\n// Gradient\ngradient = context.createLinearGradient(${this.gradient_point_1.x}, ${this.gradient_point_1.y}, ${this.gradient_point_2.x}, ${this.gradient_point_2.y});\n`;
-        for (let i=0; i<this.gradient_stops.length; i++) {
+        for (let i=0; i<this.controlData.gradient_stops.length; i++) {
           if (i == 0) {
-            this.textArea.value = this.textArea.value+`gradient.addColorStop(0.0, '${this.gradient_stops[0]}');\n`;
+            this.textArea.value = this.textArea.value+`gradient.addColorStop(0.0, '${this.controlData.gradient_stops[0]}');\n`;
           } else {
-            this.gradient.addColorStop(i*(1.0/(this.gradient_stops.length-1)), this.gradient_stops[i])
-            this.textArea.value = this.textArea.value+`gradient.addColorStop(${i*(1.0/(this.gradient_stops.length-1))}, '${this.gradient_stops[1]}');\n`;
+            this.gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
+            this.textArea.value = this.textArea.value+`gradient.addColorStop(${i*(1.0/(this.controlData.gradient_stops.length-1))}, '${this.controlData.gradient_stops[1]}');\n`;
           }
         }
         this.textArea.value = this.textArea.value+`context.fillStyle = gradient;\n\n`;
       }
 
-      if (this.useFill) {
+      if (this.controlData.useFill) {
         this.context.fill()
       }
       this.context.stroke()
 
-      if (this.stroke_mode == 2) {
+      if (this.controlData.stroke_mode == 2) {
         this.textArea.value = this.textArea.value+`\n// Quadratic line\ncontext.beginPath();\n`;
         this.textArea.value = this.textArea.value+`context.moveTo(${this.points[0].x}, ${this.points[0].y});\n`;
 
@@ -575,32 +405,28 @@ export default {
 
       }
 
-      if (this.useFill) {
+      if (this.controlData.useFill) {
         this.textArea.value = this.textArea.value+`context.fill();\n`;
       }
       this.textArea.value = this.textArea.value+`context.stroke();\n`;
 
-      this.quadratic_stage = 0
-      this.fill_flag = 0
-      this.pickingGradient = false
-      this.started = false
+      this.clearVars()
 
       this.image_buffer = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)		
 
     },
     pickGradientDirection(ev) {
 
-      console.log('pickGradientDirection', 'fill_mode', this.fill_mode)
+      console.log('pickGradientDirection', 'fill_mode', this.controlData.fill_mode)
 
-      if (!this.useFill || !this.connectLines || this.fill_mode == 1) {
+      if (!this.controlData.useFill || !this.controlData.connectLines || this.controlData.fill_mode == 1) {
         return
       }
 
       let x = extractXFromEvent({ ev })
       let y = extractYFromEvent({ ev })
 
-      this.context.strokeStyle = this.lineColor.hex
-      this.context.fillStyle = this.gradientColor.hex
+      this.context.fillStyle = this.controlData.gradientColor.hex
 
       if (this.gradient_stage == 0) {
         drawPointer({ obj:this, x, y })
@@ -611,6 +437,8 @@ export default {
         this.gradient_point_1.setCoords(x, y)
 
         this.gradient_stage = 1
+
+        this.feedbackText = 'Choose a 2nd point to end the GRADIENT'
       } else if (this.gradient_stage == 1) {
         this.context.lineTo(x, y)
         this.context.stroke()
@@ -619,11 +447,11 @@ export default {
 
         setGradientFromPoints({ obj:this, p1:this.gradient_point_1, p2:this.gradient_point_2 })
 
-        for (let i=0; i<this.gradient_stops.length; i++) {
+        for (let i=0; i<this.controlData.gradient_stops.length; i++) {
           if (i == 0) {
-            this.fill_gradient.addColorStop(0.0, this.gradient_stops[0])
+            this.fill_gradient.addColorStop(0.0, this.controlData.gradient_stops[0])
           } else {
-            this.fill_gradient.addColorStop(i*(1.0/(this.gradient_stops.length-1)), this.gradient_stops[i])
+            this.fill_gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
           }
         }
 
@@ -639,6 +467,33 @@ export default {
     onClickExecute() {
       console.log('onClickExecute')
       execute({ obj: this })
+    },
+    onControl(obj) {
+      console.log('onControl', obj)
+      this.controlData = obj
+
+      if (this.context === null) {
+        return
+      }
+
+      this.context.strokeStyle = this.controlData.lineColor.hex
+      this.context.fillStyle = this.controlData.fillColor.hex;
+
+      this.textArea.value = this.textArea.value+`\ncontext.strokeStyle = '${this.controlData.lineColor.hex}';\n`
+      this.textArea.value = this.textArea.value+`context.fillStyle = '${this.controlData.fillColor.hex}';\n`
+
+      this.gradient = this.gradientContext.createLinearGradient(0, 0, 200, 0)
+      for (let i=0; i<this.controlData.gradient_stops.length; i++) {
+        if (i == 0) {
+          this.gradient.addColorStop(0.0, this.controlData.gradient_stops[0])
+        } else {
+          this.gradient.addColorStop(i*(1.0/(this.controlData.gradient_stops.length-1)), this.controlData.gradient_stops[i])
+        }
+      }
+      this.gradientContext.fillStyle = this.gradient
+      this.gradientContext.fillRect(0, 0, this.gradientCanvas.width, this.gradientCanvas.height)
+
+      resetFeedback({ obj:this })
     }
   }
 

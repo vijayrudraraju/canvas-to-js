@@ -5,7 +5,7 @@ function Point( x, y ) {
 
 export const lineStageOne = function ({ obj, x, y }) {
 
-  console.log('lineStageONE', 'straightCount', obj.straightCount, 'useFill', obj.useFill, 'x', x, 'y', y)
+  console.log('lineStageONE', 'straightCount', obj.straightCount, 'useFill', obj.controlData.useFill, 'x', x, 'y', y)
 
   obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
 
@@ -22,7 +22,7 @@ export const lineStageOne = function ({ obj, x, y }) {
 
   obj.started = true;
 
-  if (obj.connectLines) {
+  if (obj.controlData.connectLines) {
     obj.textArea.value = obj.textArea.value+`\n// Straight line\ncontext.beginPath();\n`
     obj.textArea.value = obj.textArea.value+`context.moveTo(${x}, ${y});\n`
   }
@@ -32,18 +32,20 @@ export const lineStageOne = function ({ obj, x, y }) {
   obj.points = []
   obj.points.push(new Point(x, y))
 
+  obj.feedbackText = 'Choose a 2nd point to draw a line to'
+
 }
 
 export const lineStageTwo = function ({ obj, x, y }) {
 
-  console.log('lineStageTWO', 'straightCount', obj.straightCount, 'useFill', obj.useFill)
-  console.log('lineStageTWO', 'fill_mode', obj.fill_mode, 'fill_flag', obj.fill_flag)
+  console.log('lineStageTWO', 'straightCount', obj.straightCount, 'useFill', obj.controlData.useFill)
+  console.log('lineStageTWO', 'fill_mode', obj.controlData.fill_mode, 'highlight_flag', obj.highlight_flag)
 
   if (obj.straightCount == 0) {
     obj.context.putImageData(obj.image_buffer, 0, 0)
   }
 
-  if (obj.fill_flag == 0) {
+  if (!obj.highlight_flag) {
     obj.points.push(new Point(x, y))
 
     console.log('lineStageTWO', 'lineTo', x, y, 'stroke')
@@ -55,7 +57,7 @@ export const lineStageTwo = function ({ obj, x, y }) {
 
     console.log('lineStageTWO', 'lineTo', obj.points[0].x, obj.points[0].y, 'finalStroke')
 
-    if (obj.stroke_mode == 0) {
+    if (obj.controlData.stroke_mode == 0) {
       obj.context.beginPath()
       obj.context.moveTo(obj.points[0].x, obj.points[0].y)
 
@@ -69,70 +71,62 @@ export const lineStageTwo = function ({ obj, x, y }) {
     }
   }
 
-  if (obj.useFill && obj.fill_mode == 1) {
+  if (obj.controlData.useFill && obj.controlData.fill_mode == 1) {
     obj.context.fill();
   }
 
-  if (!obj.connectLines) {
-    obj.started = false;
-  } else {
-    console.log('lineStageTWO', 'getImageData') 
-  }
   obj.image_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)		
-  
  
-  if (!obj.connectLines) {
+  if (!obj.controlData.connectLines) {
+    obj.feedbackText = 'Completed the LINE, draw something else'
+
+    console.log('feedbackText', obj.feedbackText)
+
+    obj.started = false;
+
     obj.textArea.value = obj.textArea.value+`\n// Straight line\ncontext.beginPath();\n`
     obj.textArea.value = obj.textArea.value+`context.moveTo(${obj.points[0].x}, ${obj.points[0].y});\n`
     obj.textArea.value = obj.textArea.value+`context.lineTo(${x}, ${y});\n`
     obj.textArea.value = obj.textArea.value+`context.stroke();\n`
   } else {
-    if (obj.fill_flag == 0) {
+    obj.feedbackText = 'Choose another point to connect OR click the starting point to close LINE'
+
+    if (!obj.highlight_flag) {
       obj.textArea.value = obj.textArea.value+`context.lineTo(${x}, ${y});\n`
+
+      obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
     } else {
       obj.textArea.value = obj.textArea.value+`context.lineTo(${obj.points[0].x}, ${obj.points[0].y});\n`
+
+      obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
+      if (obj.controlData.useFill) {
+        if (obj.controlData.fill_mode == 1) {
+          obj.handleLastStageClick()
+        } else if (obj.controlData.fill_mode == 2) {
+          obj.feedbackText = 'Choose a 1st point to start the GRADIENT'
+          obj.gradient_stage = 0
+          obj.pickingGradient = true
+          obj.canvas.addEventListener('click', obj.pickGradientDirection, false)
+        }
+      } else {
+        obj.handleLastStageClick()
+      }
     }
   }
 
   obj.straightCount++
 
-  if (obj.connectLines && obj.useFill) {
-    if (obj.fill_mode == 1) {
-      if (obj.fill_flag == 0) {
-        obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
-      } else if (obj.fill_flag == 1) {
-        obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
-        obj.handleLastStageClick()
-      }
-    } else if (obj.fill_mode == 2) {
-      if (obj.fill_flag == 0) {
-        obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
-      } else if (obj.fill_flag == 1) {
-        obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
-
-        obj.gradient_stage = 0
-        obj.pickingGradient = true
-        obj.canvas.addEventListener('click', obj.pickGradientDirection, false)
-      }
-    }
-  } else if (obj.connectLines) {
-    if (obj.fill_flag == 0) {
-      obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
-    } else {
-      obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
-      obj.handleLastStageClick()
-    }
-  }
-
+  /*
   for (let i=0; i<obj.points.length; i++) {
     console.log('lineStageTwo', 'points', obj.points[i].x, obj.points[i].y)
   }
+  */
 
 }
 
 export const quadraticStageOne = function ({ obj, x, y }) {
 
-  console.log('quadraticStageONE', 'x', x, 'y', y, 'fill_mode', obj.fill_mode)
+  console.log('quadraticStageONE', 'x', x, 'y', y, 'fill_mode', obj.controlData.fill_mode)
 
   obj.image_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)
   obj.fill_chain_buffer = obj.context.getImageData(0, 0, obj.canvas.width, obj.canvas.height)
@@ -152,11 +146,13 @@ export const quadraticStageOne = function ({ obj, x, y }) {
 
   obj.points.push(new Point(x, y))
 
+  obj.feedbackText = 'Choose a 2nd point to end the CURVE at'
+
 }
 
 export const quadraticStageTwo = function ({ obj, x, y }) {
 
-  console.log('quadraticStageTWO', 'obj', obj, 'x', x, 'y', y, 'fill_mode', obj.fill_mode, 'points', obj.points)
+  console.log('quadraticStageTWO', 'obj', obj, 'x', x, 'y', y, 'fill_mode', obj.controlData.fill_mode, 'points', obj.points)
   obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
 
   if (obj.points.length == 1) {
@@ -173,7 +169,7 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
     obj.points.push(new Point(x, y));
     obj.points.push(new Point(0, 0));
   } else {
-    if (obj.fill_flag === 1) {
+    if (obj.highlight_flag) {
       x = obj.adj_x
       y = obj.adj_y
     }
@@ -198,7 +194,6 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
     obj.points.push(new Point(x, y))
   }
 
-  obj.quadraticActivated = true
   obj.quadratic_stage = 2
 
 
@@ -210,33 +205,35 @@ export const quadraticStageTwo = function ({ obj, x, y }) {
 
 export const quadraticStageThree = function ({ obj, x, y }) {
 
-  console.log('quadraticStageTHREE', 'x', x, 'y', y, 'fill_mode', obj.fill_mode)
+  console.log('quadraticStageTHREE', 'x', x, 'y', y, 'fill_mode', obj.controlData.fill_mode)
 
   obj.quadratic_stage = 1
-  if (obj.connectLines && (!obj.useFill || obj.fill_mode == 1)) {
-    if (obj.fill_flag == 0) {
+  if (obj.controlData.connectLines && obj.controlData.fill_mode == 1) {
+    obj.feedbackText = 'Choose another point to connect OR click the starting point to close path'
+    if (!obj.highlight_flag) {
       obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
-    } else if (obj.fill_flag == 1) {
+    } else {
       obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
       obj.handleLastStageClick()
     }
-  } else if (obj.fill_mode == 2) {
-    if (obj.fill_flag == 0) {
+  } else if (obj.controlData.fill_mode == 2) {
+    obj.feedbackText = 'Choose another point to connect OR click the starting point to close CURVE'
+    if (!obj.highlight_flag) {
       obj.canvas.addEventListener('mousemove', obj.highlightOrigin, false)
-    } else if (obj.fill_flag == 1) {
+    } else {
+      obj.feedbackText = 'Choose a 1st point to start the GRADIENT'
       obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
       obj.gradient_stage = 0
       obj.pickingGradient = true
       obj.canvas.addEventListener('click', obj.pickGradientDirection, false)
     }
   } else {
-      obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
-      obj.handleLastStageClick()
+    obj.quadratic_stage = 0
+    obj.canvas.removeEventListener('mousemove', obj.highlightOrigin, false)
+    obj.handleLastStageClick()
   }
 
   obj.image_buffer = obj.context.getImageData( 0, 0, obj.canvas.width, obj.canvas.height );		
-
-  obj.quadraticActivated = false
 
 }
 
@@ -325,5 +322,20 @@ export const extractYFromEvent = ({ ev }) => {
 }
 
 export const resetCode = ({ obj }) => {
-  obj.textArea.value = `// Initialize\nlet canvas = document.getElementById('editorCanvas');\nlet context = canvas.getContext('2d');\n\ncontext.lineWidth = ${obj.lineThickness};\n\ncontext.strokeStyle = '${obj.lineColor.hex}';\ncontext.fillStyle = '${obj.fillColor.hex}';\n`
+  obj.textArea.value = `// Initialize\nlet canvas = document.getElementById('editorCanvas');\nlet context = canvas.getContext('2d');\n\ncontext.lineWidth = ${obj.lineThickness};\n\ncontext.strokeStyle = '${obj.controlData.lineColor.hex}';\ncontext.fillStyle = '${obj.controlData.fillColor.hex}';\n`
+}
+
+export const resetFeedback = ({ obj }) => {
+  console.log('resetFeedback', obj.controlData.stroke_mode)
+  switch (parseInt(obj.controlData.stroke_mode)) {
+    case 0:
+      obj.feedbackText = 'Draw the 1st point of the LINE'
+      break
+    case 1:
+      obj.feedbackText = 'Start scribbling!'
+      break
+    case 2:
+      obj.feedbackText = 'Draw the 1st point of the CURVE'
+      break
+  }
 }
