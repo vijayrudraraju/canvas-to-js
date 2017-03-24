@@ -46,5 +46,3 @@ module.exports = {
     })
   ],
 }
-
-console.log('webpack.config.js', 'module.exports', module.exports)
